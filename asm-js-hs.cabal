@@ -1,0 +1,58 @@
+name:                asm-js-hs
+version:             0.1.0.0
+synopsis:            All things asm.js in Haskell
+-- description:
+homepage:            https://github.com/daniel-j-h/asm-js-hs#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Daniel J. Hofmann
+maintainer:          daniel@trvx.org
+copyright:           Daniel J. Hofmann
+category:            Example
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable asm-js-hs
+  hs-source-dirs:
+    src
+
+  main-is:
+    Main.hs
+
+  ghc-options:
+    -Wall
+
+  default-language:
+    Haskell2010
+
+  default-extensions:
+    NoImplicitPrelude
+    OverloadedStrings
+
+  build-depends:
+    base      >= 4.9  && < 4.10,
+    protolude >= 0.1  && < 0.2,
+    text      >= 1.2  && < 1.3,
+    mtl       >= 2.2  && < 2.3
+
+
+test-suite hlint
+  hs-source-dirs:
+    tests
+
+  main-is:
+    HLint.hs
+
+  ghc-options:
+    -Wall
+
+  default-language:
+    Haskell2010
+
+  build-depends:
+    base      >= 4.9  && < 4.10,
+    hlint     >= 1.9  && < 1.10
+
+  type:
+    exitcode-stdio-1.0
