@@ -1,137 +1,183 @@
-{-# LANGUAGE GADTs #-}
-
 module Main where
 
 import Protolude
 
-
-data Expr a where
-  IntVal    :: Int    -> Expr Int
-  FloatVal  :: Float  -> Expr Float
-  DoubleVal :: Double -> Expr Double
-  BoolVal   :: Bool   -> Expr Bool
-
-  IntAdd :: Expr Int -> Expr Int -> Expr Int
-  IntSub :: Expr Int -> Expr Int -> Expr Int
-  IntMul :: Expr Int -> Expr Int -> Expr Int
-  IntDiv :: Expr Int -> Expr Int -> Expr Int
-
-  FloatAdd :: Expr Float -> Expr Float -> Expr Float
-  FloatSub :: Expr Float -> Expr Float -> Expr Float
-  FloatMul :: Expr Float -> Expr Float -> Expr Float
-  FloatDiv :: Expr Float -> Expr Float -> Expr Float
-
-  DoubleAdd :: Expr Double -> Expr Double -> Expr Double
-  DoubleSub :: Expr Double -> Expr Double -> Expr Double
-  DoubleMul :: Expr Double -> Expr Double -> Expr Double
-  DoubleDiv :: Expr Double -> Expr Double -> Expr Double
-
-  BoolAnd :: Expr Bool -> Expr Bool -> Expr Bool
-  BoolOr  :: Expr Bool -> Expr Bool -> Expr Bool
-  BoolNot :: Expr Bool -> Expr Bool
-
-  IntBitAnd :: Expr Int -> Expr Int -> Expr Int
-  IntBitOr  :: Expr Int -> Expr Int -> Expr Int
-  IntBitNot :: Expr Int -> Expr Int
-
-  IntUnaryPlus    :: Expr Int    -> Expr Int
-  FloatUnaryPlus  :: Expr Float  -> Expr Float
-  DoubleUnaryPlus :: Expr Double -> Expr Double
-
-  IntUnaryMinus    :: Expr Int    -> Expr Int
-  FloatUnaryMinus  :: Expr Float  -> Expr Float
-  DoubleUnaryMinus :: Expr Double -> Expr Double
-
-  FloatRound :: Expr Float -> Expr Float
+data JsExpr a
+  = Val a
+  | Add (JsExpr a) (JsExpr a)
+  | Sub (JsExpr a) (JsExpr a)
+  | Mul (JsExpr a) (JsExpr a)
+  | Div (JsExpr a) (JsExpr a)
+  | And (JsExpr a) (JsExpr a)
+  | Or  (JsExpr a) (JsExpr a)
+  | Not (JsExpr a)
+  | BitAnd (JsExpr a) (JsExpr a)
+  | BitOr  (JsExpr a) (JsExpr a)
+  | BitNot (JsExpr a)
+  | UnaryPlus  (JsExpr a)
+  | UnaryMinus (JsExpr a)
+  | Round (JsExpr a)
 
 
-reify :: Expr a -> Text
-reify (IntVal  v)          = show v
-reify (FloatVal v)         = show v
-reify (DoubleVal v)        = show v
-reify (BoolVal  v)         = if v then "true" else "false"
-reify (IntAdd l r)         = "(" <> reify l <> "+"  <> reify r <> ")"
-reify (FloatAdd l r)       = "(" <> reify l <> "+"  <> reify r <> ")"
-reify (DoubleAdd l r)      = "(" <> reify l <> "+"  <> reify r <> ")"
-reify (IntSub l r)         = "(" <> reify l <> "-"  <> reify r <> ")"
-reify (FloatSub l r)       = "(" <> reify l <> "-"  <> reify r <> ")"
-reify (DoubleSub l r)      = "(" <> reify l <> "-"  <> reify r <> ")"
-reify (IntMul l r)         = "(" <> reify l <> "*"  <> reify r <> ")"
-reify (FloatMul l r)       = "(" <> reify l <> "*"  <> reify r <> ")"
-reify (DoubleMul l r)      = "(" <> reify l <> "*"  <> reify r <> ")"
-reify (IntDiv l r)         = "(" <> reify l <> "/"  <> reify r <> ")"
-reify (FloatDiv l r)       = "(" <> reify l <> "/"  <> reify r <> ")"
-reify (DoubleDiv l r)      = "(" <> reify l <> "/"  <> reify r <> ")"
-reify (BoolAnd l r)        = "(" <> reify l <> "&&" <> reify r <> ")"
-reify (BoolOr l r)         = "(" <> reify l <> "||" <> reify r <> ")"
-reify (BoolNot e)          = "(" <>            "!"  <> reify e <> ")"
-reify (IntBitAnd l r)      = "(" <> reify l <> "&"  <> reify r <> ")"
-reify (IntBitOr l r)       = "(" <> reify l <> "|"  <> reify r <> ")"
-reify (IntBitNot e)        = "(" <>            "~"  <> reify e <> ")"
-reify (IntUnaryPlus e)     = "+"  <> reify e
-reify (FloatUnaryPlus e)   = "+"  <> reify e
-reify (DoubleUnaryPlus e)  = "+"  <> reify e
-reify (IntUnaryMinus e)    = "-"  <> reify e
-reify (FloatUnaryMinus e)  = "-"  <> reify e
-reify (DoubleUnaryMinus e) = "-"  <> reify e
-reify (FloatRound e)       = "Math.fround("  <> reify e <> ")"
+-- class Functor f where
+--   fmap :: (a -> b) -> f a -> f b 
+instance Functor JsExpr where
+  fmap f (Val v)        = Val (f v)
+  fmap f (Add l r)      = Add (fmap f l) (fmap f r)
+  fmap f (Sub l r)      = Sub (fmap f l) (fmap f r)
+  fmap f (Mul l r)      = Mul (fmap f l) (fmap f r)
+  fmap f (Div l r)      = Div (fmap f l) (fmap f r)
+  fmap f (And l r)      = And (fmap f l) (fmap f r)
+  fmap f (Or l r)       = Or  (fmap f l) (fmap f r)
+  fmap f (Not e)        = Not (fmap f e)
+  fmap f (BitAnd l r)   = BitAnd (fmap f l) (fmap f r)
+  fmap f (BitOr l r)    = BitOr  (fmap f l) (fmap f r)
+  fmap f (BitNot e)     = BitNot (fmap f e)
+  fmap f (UnaryPlus e)  = UnaryPlus  (fmap f e)
+  fmap f (UnaryMinus e) = UnaryMinus (fmap f e)
+  fmap f (Round e)      = Round (fmap f e)
 
 
-coerce :: Expr a -> Expr a
-coerce (IntAdd l r) = IntBitOr (IntAdd (coerce l) (coerce r)) (IntVal 0)
-coerce (IntSub l r) = IntBitOr (IntSub (coerce l) (coerce r)) (IntVal 0)
-coerce (IntMul l r) = IntBitOr (IntMul (coerce l) (coerce r)) (IntVal 0)
-coerce (IntDiv l r) = IntBitOr (IntDiv (coerce l) (coerce r)) (IntVal 0)
-coerce (FloatAdd l r) = FloatRound (FloatAdd (coerce l) (coerce r))
-coerce (FloatSub l r) = FloatRound (FloatSub (coerce l) (coerce r))
-coerce (FloatMul l r) = FloatRound (FloatMul (coerce l) (coerce r))
-coerce (FloatDiv l r) = FloatRound (FloatDiv (coerce l) (coerce r))
-coerce (DoubleAdd l r) = DoubleUnaryPlus (DoubleAdd (coerce l) (coerce r))
-coerce (DoubleSub l r) = DoubleUnaryPlus (DoubleSub (coerce l) (coerce r))
-coerce (DoubleMul l r) = DoubleUnaryPlus (DoubleMul (coerce l) (coerce r))
-coerce (DoubleDiv l r) = DoubleUnaryPlus (DoubleDiv (coerce l) (coerce r))
-coerce v = v
+-- class Foldable t where
+--   foldMap :: Monoid m => (a -> m) -> t a -> m 
+instance Foldable JsExpr where
+  foldMap f (Val v)        = f v
+  foldMap f (Add l r)      = foldMap f l `mappend` foldMap f r
+  foldMap f (Sub l r)      = foldMap f l `mappend` foldMap f r
+  foldMap f (Mul l r)      = foldMap f l `mappend` foldMap f r
+  foldMap f (Div l r)      = foldMap f l `mappend` foldMap f r
+  foldMap f (And l r)      = foldMap f l `mappend` foldMap f r
+  foldMap f (Or l r)       = foldMap f l `mappend` foldMap f r
+  foldMap f (Not e)        = foldMap f e
+  foldMap f (BitAnd l r)   = foldMap f l `mappend` foldMap f r
+  foldMap f (BitOr l r)    = foldMap f l `mappend` foldMap f r
+  foldMap f (BitNot e)     = foldMap f e
+  foldMap f (UnaryPlus e)  = foldMap f e
+  foldMap f (UnaryMinus e) = foldMap f e
+  foldMap f (Round e)      = foldMap f e
 
 
-data Fn a = Fn
-  { fnName :: Text
-  , fnExpr :: Expr a }
+-- class (Functor t, Foldable t) => Traversable t where
+--   traverse :: Applicative f => (a -> f b) -> t a -> f (t b) 
+instance Traversable JsExpr where
+  traverse f (Val v)        = Val <$> f v
+  traverse f (Add l r)      = Add <$> traverse f l <*> traverse f r
+  traverse f (Sub l r)      = Sub <$> traverse f l <*> traverse f r
+  traverse f (Mul l r)      = Mul <$> traverse f l <*> traverse f r
+  traverse f (Div l r)      = Div <$> traverse f l <*> traverse f r
+  traverse f (And l r)      = And <$> traverse f l <*> traverse f r
+  traverse f (Or l r)       = Or  <$> traverse f l <*> traverse f r
+  traverse f (Not e)        = Not <$> traverse f e
+  traverse f (BitAnd l r)   = BitAnd <$> traverse f l <*> traverse f r
+  traverse f (BitOr l r)    = BitOr  <$> traverse f l <*> traverse f r
+  traverse f (BitNot e)     = BitNot <$> traverse f e
+  traverse f (UnaryPlus e)  = UnaryPlus  <$> traverse f e
+  traverse f (UnaryMinus e) = UnaryMinus <$> traverse f e
+  traverse f (Round e)      = Round <$> traverse f e
 
-mkFn :: Fn a -> Text
-mkFn f = "function " <> fnName f <> "() { return " <> (reify . coerce $ fnExpr f) <> "}"
+
+class JsShow a where
+  jsShow :: a -> Text
+
+instance JsShow Int where
+  jsShow = show
+
+instance JsShow Float where
+  jsShow = show
+
+instance JsShow Double where
+  jsShow = show
+
+instance JsShow Bool where
+  jsShow (True)  = "true"
+  jsShow (False) = "false"
 
 
-data Module a = Module
-  { moduleName :: Text
-  , moduleFn  :: Fn a }
+jsReify :: (JsShow a) => JsExpr a -> Text
+jsReify (Val v)        = jsShow v
+jsReify (Add l r)      = "(" <> jsReify l <> "+"  <> jsReify r <> ")"
+jsReify (Sub l r)      = "(" <> jsReify l <> "-"  <> jsReify r <> ")"
+jsReify (Mul l r)      = "(" <> jsReify l <> "*"  <> jsReify r <> ")"
+jsReify (Div l r)      = "(" <> jsReify l <> "/"  <> jsReify r <> ")"
+jsReify (And l r)      = "(" <> jsReify l <> "&&" <> jsReify r <> ")"
+jsReify (Or l r)       = "(" <> jsReify l <> "||" <> jsReify r <> ")"
+jsReify (Not e)        = "(" <>              "!"  <> jsReify e <> ")"
+jsReify (BitAnd l r)   = "(" <> jsReify l <> "&"  <> jsReify r <> ")"
+jsReify (BitOr l r)    = "(" <> jsReify l <> "|"  <> jsReify r <> ")"
+jsReify (BitNot e)     = "(" <>              "~"  <> jsReify e <> ")"
+jsReify (UnaryPlus e)  = "+" <> jsReify e
+jsReify (UnaryMinus e) = "-" <> jsReify e
+jsReify (Round e)      = "Math.fround("  <> jsReify e <> ")"
 
-mkModule :: Module a -> Text
-mkModule m = header <> "{" <> "\"use asm\"; return {" <> exports <> "}; }"
+
+class JsCoerce a where
+  jsCoerce :: JsExpr a -> JsExpr a
+
+instance JsCoerce Int where
+  jsCoerce (Add l r) = BitOr (Add (jsCoerce l) (jsCoerce r)) (Val 0)
+  jsCoerce (Sub l r) = BitOr (Sub (jsCoerce l) (jsCoerce r)) (Val 0)
+  jsCoerce (Mul l r) = BitOr (Mul (jsCoerce l) (jsCoerce r)) (Val 0)
+  jsCoerce (Div l r) = BitOr (Div (jsCoerce l) (jsCoerce r)) (Val 0)
+  jsCoerce v = v
+
+instance JsCoerce Float where
+  jsCoerce (Add l r) = Round (Add (jsCoerce l) (jsCoerce r))
+  jsCoerce (Sub l r) = Round (Sub (jsCoerce l) (jsCoerce r))
+  jsCoerce (Mul l r) = Round (Mul (jsCoerce l) (jsCoerce r))
+  jsCoerce (Div l r) = Round (Div (jsCoerce l) (jsCoerce r))
+  jsCoerce v = v
+
+instance JsCoerce Double where
+  jsCoerce (Add l r) = UnaryPlus (Add (jsCoerce l) (jsCoerce r))
+  jsCoerce (Sub l r) = UnaryPlus (Sub (jsCoerce l) (jsCoerce r))
+  jsCoerce (Mul l r) = UnaryPlus (Mul (jsCoerce l) (jsCoerce r))
+  jsCoerce (Div l r) = UnaryPlus (Div (jsCoerce l) (jsCoerce r))
+  jsCoerce v = v
+
+
+data JsFunction a = JsFunction
+  { jsFunctionName :: Text
+  , jsFunctionExpr :: JsExpr a }
+
+data JsModule a = JsModule
+  { jsModuleName     :: Text
+  , jsModuleFunction :: JsFunction a }
+
+
+mkJsFunction :: (JsShow a, JsCoerce a) => JsFunction a -> Text
+mkJsFunction f = "function " <> jsFunctionName f <> "() { return "
+                             <> (jsReify . jsCoerce $ jsFunctionExpr f)
+                             <> "}"
+
+mkJsModule :: (JsShow a, JsCoerce a) => JsModule a -> Text
+mkJsModule m = header <> "{" <> "\"use asm\"; return {"
+                      <> exports
+                      <> "}; }"
   where
-    header = "function " <> moduleName m <> "(stdlib, foreign, heap)"
-    exports = (\ f -> fnName f <> ":" <> mkFn f) $ moduleFn m
+    header = "function " <> jsModuleName m <> "(stdlib, foreign, heap)"
+    exports = (\ f -> jsFunctionName f <> ":" <> mkJsFunction f) $ jsModuleFunction m
 
 
-e0 :: Expr Int
-e0 = IntAdd (IntVal 3) (IntMul (IntVal 2) (IntVal 5))
+e0 :: JsExpr Int
+e0 = Add (Val 3) (Mul (Val 2) (Val 5))
 
-e1 :: Expr Float
-e1 = FloatMul (FloatDiv (FloatVal 2) (FloatVal 3)) (FloatDiv (FloatVal 3) (FloatVal 2))
+e1 :: JsExpr Int
+e1 = Mul (Div (Val 2) (Val 3)) (Div (Val 3) (Val 2))
 
-f0 :: Fn Int
-f0 = Fn { fnName = "f0", fnExpr = e0 }
+f0 :: JsFunction Int
+f0 = JsFunction "f0" e0
 
-f1 :: Fn Float
-f1 = Fn { fnName = "f1", fnExpr = e1 }
+f1 :: JsFunction Int
+f1 = JsFunction "f1" e1
 
-m0 :: Module Int
-m0 = Module { moduleName = "m0", moduleFn = f0 }
+m0 :: JsModule Int
+m0 = JsModule "m0" f0
 
-m1 :: Module Float
-m1 = Module { moduleName = "m1", moduleFn = f1 }
+m1 :: JsModule Int
+m1 = JsModule "m1" f1
 
 
 main :: IO ()
 main = do
-  putText $ mkModule m0
-  putText $ mkModule m1
+  putText $ mkJsModule m0
+  putText $ mkJsModule m1
